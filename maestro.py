@@ -30,7 +30,7 @@ class Controller:
     # example, '/dev/ttyACM2' or for Windows, something like 'COM3'.
     def __init__(self,ttyStr='/dev/ttyACM0',device=0x0c):
         # Open the command port
-        self.usb = serial.Serial(ttyStr)
+        self.usb = serial.Serial(ttyStr, baudrate=115200)
         # Command lead-in and device number are sent for each Pololu serial command.
         self.PololuCmd = chr(0xaa) + chr(device)
         # Track target position for each servo. The function isMoving() will
@@ -49,6 +49,7 @@ class Controller:
     def sendCmd(self, cmd):
         cmdStr = self.PololuCmd + cmd
         if PY2:
+            print([ord(a) for a in cmdStr])
             self.usb.write(cmdStr)
         else:
             self.usb.write(bytes(cmdStr,'latin-1'))
