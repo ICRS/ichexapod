@@ -67,10 +67,11 @@ def read_vector_from_controller():
 
 class Solver(object):
 
-    def __init__(self):
+    def __init__(self, usb):
         self.primary = [np.zeros(3) for _ in range(6)]
         self.support = [np.zeros(3) for _ in range(6)]
         self.cycle = Cycle.FORWARD
+        self._usb = usb
 
     def _move(self, primary, support):
 
@@ -101,8 +102,12 @@ class Solver(object):
             assert isinstance(tz, float)
             angles[i] = hello.call_motors(i, sx, sy, sz, tx, ty, tz)
 
-        # TODO: Calls UART? Whatever? to actually rotate those motors.
-        rotate_motors(angles)
+        # This is UART, hence async. This won't block.
+        i = 0
+        for tuple in angles:
+            for angle in tuple:
+                self._usb.setTarget(i, angle)  # TODO(fyq14): [angle] to quadmicroseconds.
+                i += 1
 
         # Update at the end
         for i, p in enumerate(primary):
@@ -149,7 +154,7 @@ class Solver(object):
                 forward_target = np.zero([0, difference_ratio * BUBBLE_RADIUS, LIFT_HEIGHT])
                 backward_target = np.zero([0, -BUBBLE_RADIUS, 0])
 
-            # TODO(fyq14): This assumes all thre have exactly the same
+            # HACK(fyq14): This assumes all thre have exactly the same
             #              position in their respective coordinates.
             delta_front = cap_magnitude(
                     forward_target - self.primary[0], magnitude=delta_front
